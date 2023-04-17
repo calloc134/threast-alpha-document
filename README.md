@@ -486,9 +486,6 @@ Prismaについてはstringのunionなので心配ご無用
      - GET
        - res
          - TinyPostReqDto[]
-     - DELETE
-       - res
-         - TinyUserResDto
    - @{handle}/followings
      - GET
        - res
@@ -525,7 +522,7 @@ Prismaについてはstringのunionなので心配ご無用
          - TinyPostResDto
      - DELETE
        - res
-         - TinyPostResDto
+         - TinyPostResDto (ただしいいねしていなければ400)
    - {post_cuid}/comments
      - GET
        - res
@@ -566,12 +563,53 @@ Prismaについてはstringのunionなので心配ご無用
 
 ## nestjsファイル&ディレクトリ構成
  - src
-   - authed
-   - nonauthed
+   - modules
+     - Auth (わける必要あるかこれ)
+       - login
+       - logout
+       - signup (signupはここに入れるべきなのか？)
+     - MyProfile
+       - auth
+         - getMe
+         - updateMe
+         - deleteMe
+         - updateMyPassword
+         - updateMyImage
+         - getMyFollowings
+         - getMyFollowers
+         - createMyFollowing
+         - getMyPosts
+     - ProfileByHandle
+       - nonauth
+         - getAllUsers
+         - getUserByHandle
+       - auth
+         - getUserFollowingsByHandle
+         - getUserFollowersByHandle
+         - getUserPostsByHandle
+     - Posts
+       - nonauth
+         - getAllPosts
+         - getPostByCuid
+       - auth
+         - updatePostByCuid
+         - deletePostByCuid
+     - PostLikes
+       - auth
+         - getPostLikesByPostCuid
+         - createPostLikesByPostCuid
+         - deletePostLikesByPostCuid
+     - PostComments
+       - auth
+         - getPostCommentsByPostCuid
+         - createPostCommentsByPostCuid
+         - updatePostCommentsByPostCommentCuid
+         - deletePostCommentsByPostCommentCuid
    - dto
      - req
-       - 
+       - ...
      - res
+       - ...
    - exceptions
      - SessionNotFoundException.ts
      - RolePermissionException.ts
@@ -582,11 +620,21 @@ Prismaについてはstringのunionなので心配ご無用
 こうまとめるのがいいかも？
 モジュールのディレクトリ構造を考える
  - どのような構造が一番脳に負担がかからないようにできるか？
+ - →一応モジュールを分割してみた
    - authedとunauthedで分ける？どちらを先にディレクトリとして配置？？
 バックエンドはfastifyにしてみる？？(ややこしくなるとつらいが…)
   ->　そうなったときの課題
   - セッションを用いるguardの実装
     - `context.switchToHttp().getRequest();`を使ってrequestオブジェクトを取得しているがこれをfastifyでやるには
+サービス内部での命名規則はどうすればいいのか
+ - クラス名は先頭大文字/メソッドは先頭小文字
+ - モジュールの分割単位はどうする？？
+ - ~~どのリソースを返却するかに応じてモジュールを分割する方針で行く~~
+ - しかし、これある程度はapiに縛られるはず(コントローラでルーティングパスを指定するので)
+   - うーむどうする
+   - やはり恩恵を感じないため、apiに沿ってモジュールを分割することにする
+   - dtoの形を変えたければdtoを変えればいいだけ
+ - コメント等は複数apiが存在するが、これをもっと別のapiであることを明確に示すべき・・・？
 
 
 ## reactファイル&ディレクトリ構成
