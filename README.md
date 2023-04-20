@@ -563,14 +563,8 @@ Prismaについてはstringのunionなので心配ご無用
 ## nestjsファイル&ディレクトリ構成
  - src
    - modules
-     - GuardModule
-       - SessionGuard
-       - RolesGuard
-       - AuthService
-         - hasValidSession
-         - hasValidRole
      - Auth (わける必要あるかこれ)
-       - nonauth
+       - nonauth (ここのクラス名/ファイルの命名どないすねん)
          - login
          - signup (signupはここに入れるべきなのか？)
        - auth
@@ -649,6 +643,9 @@ Prismaについてはstringのunionなので心配ご無用
      - ItemNotFoundException.ts
      - ItemAlreadyExistsException.ts
      - PasswordMismatchException.ts
+   - filters
+     - prisma
+       - PrismaExceptionFilter.ts
 
 こうまとめるのがいいかも？
 モジュールのディレクトリ構造を考える
