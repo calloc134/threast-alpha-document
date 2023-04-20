@@ -85,12 +85,13 @@
 
 ### アーキテクチャや命名の疑問点/不安
  - 命名をどうすればいい -> ルールを決めておく?
-    - 変数名・ディレクトリ名・その他よわい存在
+    - 変数名・ディレクトリ名・ファイル名・Prismaスキーマのプロパティ・その他よわい存在 (->ファイル名のスネークに変更 キャメルは威圧感があるので…)
       - 一般的にスネークケース
         - 例: user_name
-    - クラス名・関数名・ファイル名・Prismaスキーマ名・その他強い存在
+    - クラス名・関数名その他強い存在
       - 一般的にキャメルケース？
         - 例: UserName
+        - 関数名は先頭小文字 クラス名は線という大文字が好ましそう
   - フロントエンドは別にパスベースでもいいと思う
     - バックエンドはモジュールでまとめる形なのでコントローラにパスを記述する方式になりそう？
   - dtoの名称をどの順番にすればいいんだろうか…？
@@ -168,7 +169,7 @@
    - profile_image(?)
    - password(argon2)
    - role union((admin, subadmin, manager, user))
-   - follow[] (user:follow = 1:N) (onDelete: cascade, ユーザが削除されたらフォローも削除)
+   - following[] (user:following = 1:N) (onDelete: cascade, ユーザが削除されたらフォローも削除)
      - ユーザは複数のフォローベクトルを生やすことがあるため
    - followed[] (user:followed = 1:N) (onDelete: cascade, ユーザが削除されたらフォローも削除)
      - ユーザは複数のフォローベクトルを受けることがあるため
@@ -187,7 +188,7 @@
    - cuid (private)
    - created_at (private)
    - updated_at (private)
-   - src_user_cuid <- user (攻め) (user:follow = 1:N)
+   - src_user_cuid <- user (攻め) (user:following = 1:N)
    - dst_user_cuid <- user (受け) (user:followed = 1:N)
 
  - post -> (cuidでユニーク) 
@@ -195,7 +196,7 @@
    - created_at (private)
    - updated_at (private)
    - title
-   - content
+   - body
    - private
    - hashtags[] (post:hashtag = N:N) (onDelete: cascade, ポストが削除されたらハッシュタグの中間テーブル削除)
      - ハッシュタグが複数のポストに付与されることがあり、またポストが複数のハッシュタグを付けることもあるため
@@ -251,17 +252,19 @@ onDeleteがCascadeであるなら明記
 ## dto定義
  - req
    - login_form (これは例外)
-     - post.ts -> LoginFormReqDto
+     - login.ts -> LoginFormReqDto
        - handle
        - password
    - user
      - create.ts -> CreateUserReqDto
-       - screen_name
+       - handle 3~20 string
+       - screen_name 1~40 string
+       - password StrongPassword
      - update.ts -> UpdateUserReqDto (idはログイン済id or パスクエリよりcuid指定)
-       - screen_name?
-       - handle?
-       - bio?
-       - hidden_comment?
+       - screen_name? 1~40
+       - handle? 3~20
+       - bio? 1~100
+       - hidden_comment? 1~100
    - user_password 
      - update.ts -> UpdateUserPasswordReqDto (idはログイン済id or パスクエリよりcuid指定)
        - old_password
@@ -271,33 +274,29 @@ onDeleteがCascadeであるなら明記
        - ???
    - post
      - create.ts -> CreatePostReqDto
-       - title
-       - content
-       - private
-       - hashtags[] -> CreateHashTagReqDto
+       - title 1~100
+       - body 1~1000
+       - private boolean
+       - hashtags[] -> String(cuidを導入)存在しなければエラーにする
      - update.ts -> UpdatePostReqDto (idはログイン済id or パスクエリよりcuid指定)
        - title?
-       - content?
+       - body?
        - private?
-       - hashtags[] -> UpdateHashTagReqDto
+       - hashtags[] -> String(cuidを導入)存在しなければエラーにする
    - hashtag
      - create.ts -> CreateHashTagReqDto
-       - name
-       - description
+       - name 1~20
+       - description 1~100
      - update.ts -> UpdateHashTagReqDto (idはログイン済id or パスクエリよりcuid指定)
        - name?
        - description?
-   - like
-     - create.ts -> CreateLikeReqDto
-       - dst_post_cuid 
+   - post_comment
+     - create.ts -> CreatePostCommentReqDto
+       - content 1~300
+       - (dst_post_cuidはパスクエリで指定)
          (ユーザはログインしているのでsrc_user_cuidはロジックにより挿入)
-   - comment
-     - create.ts -> CreateCommentReqDto
-       - content
-       - dst_post_cuid
-         (ユーザはログインしているのでsrc_user_cuidはロジックにより挿入)
-     - update.ts -> UpdateCommentReqDto (idはログイン済id or パスクエリよりcuid指定)
-       - content? (これってcuidをパスクエリで指定するのか)
+     - update.ts -> UpdatePostCommentReqDto (idはログイン済id or パスクエリよりcuid指定)
+       - content 1~300 (これってcuidをパスクエリで指定するのか)
      
  - res
    - user
@@ -337,7 +336,7 @@ onDeleteがCascadeであるなら明記
      - limited.ts -> LimitedPostResDto
        - cuid
        - title
-       - content
+       - body
        - created_at
        - updated_at
        - user -> TinyUserResDto
@@ -345,7 +344,7 @@ onDeleteがCascadeであるなら明記
      - standard.ts -> StandardPostResDto
        - cuid
        - title
-       - content
+       - body
        - created_at
        - updated_at
        - user -> TinyUserResDto
@@ -362,19 +361,19 @@ onDeleteがCascadeであるなら明記
        - description
        - created_at
        - updated_at
-   - like
-     - standard.ts -> StandardLikeResDto
+   - post_like
+     - standard.ts -> StandardPostLikeResDto
        - cuid
        - created_at
        - updated_at
        - user -> TinyUserResDto
        - post -> TinyPostResDto
-   - comment
-     - standard.ts -> StandardCommentResDto
+   - post_comment
+     - standard.ts -> StandardPostCommentResDto
        - cuid
+       - content
        - created_at
        - updated_at
-       - content
        - user -> TinyUserResDto
        - posts -> TinyPostResDto
 
@@ -564,58 +563,92 @@ Prismaについてはstringのunionなので心配ご無用
 ## nestjsファイル&ディレクトリ構成
  - src
    - modules
+     - GuardModule
+       - SessionGuard
+       - RolesGuard
+       - AuthService
+         - hasValidSession
+         - hasValidRole
      - Auth (わける必要あるかこれ)
-       - login
-       - logout
-       - signup (signupはここに入れるべきなのか？)
+       - nonauth
+         - login
+         - signup (signupはここに入れるべきなのか？)
+       - auth
+         - logout
      - MyProfile
        - auth
-         - getMe
-         - updateMe
-         - deleteMe
-         - updateMyPassword
-         - updateMyImage
-         - getMyFollowings
-         - getMyFollowers
-         - createMyFollowing
-         - getMyPosts
+         - AuthMyProfile
+           - getMe
+           - updateMe
+           - deleteMe
+           - updateMyPassword
+           - updateMyImage
+           - getMyFollowings
+           - getMyFollowers
+           - createMyFollowing
+           - getMyPosts
      - ProfileByHandle
        - nonauth
-         - getAllUsers
-         - getUserByHandle
+         - NonAuthProfileByHandle
+           - getAllUsers
+           - getUserByHandle
        - auth
-         - getUserFollowingsByHandle
-         - getUserFollowersByHandle
-         - getUserPostsByHandle
+         - AuthProfileByHandle
+           - getUserFollowingsByHandle
+           - getUserFollowersByHandle
+           - getUserPostsByHandle
      - Posts
        - nonauth
-         - getAllPosts
-         - getPostByCuid
+         - NonAuthPosts
+           - getAllPosts
+           - getPostByCuid
        - auth
-         - updatePostByCuid
-         - deletePostByCuid
+         - AuthPosts
+           - updatePostByCuid
+           - deletePostByCuid
      - PostLikes
        - auth
-         - getPostLikesByPostCuid
-         - createPostLikesByPostCuid
-         - deletePostLikesByPostCuid
+         - AuthPostLikes
+           - getPostLikesByPostCuid
+           - createPostLikesByPostCuid
+           - deletePostLikesByPostCuid
      - PostComments
        - auth
-         - getPostCommentsByPostCuid
-         - createPostCommentsByPostCuid
-         - updatePostCommentsByPostCommentCuid
-         - deletePostCommentsByPostCommentCuid
+         - AuthPostComments
+           - getPostCommentsByPostCuid
+           - createPostCommentsByPostCuid
+           - updatePostCommentsByPostCommentCuid
+           - deletePostCommentsByPostCommentCuid
+   - submodule
+     - Prisma
+       - PrismaModule
+       - PrismaService
+   - guards
+     - session
+       - SessionGuard
+       - SessionGuardModule
+       - SessionGuardService
+       - setSessionGuard
+     - role
+       - RoleGuard
+       - RoleGuardModule
+       - RoleGuardService
+       - SetRoleGuard
+       - SetRole
    - dto
      - req
        - ...
      - res
        - ...
+     - wrapper
+     - types
+       - exception
    - exceptions
      - SessionNotFoundException.ts
      - RolePermissionException.ts
      - ItemNotFoundException.ts
      - ItemAlreadyExistsException.ts
-     - PasswordMisMatchException.ts
+     - PasswordMismatchException.ts
 
 こうまとめるのがいいかも？
 モジュールのディレクトリ構造を考える
@@ -635,6 +668,52 @@ Prismaについてはstringのunionなので心配ご無用
    - やはり恩恵を感じないため、apiに沿ってモジュールを分割することにする
    - dtoの形を変えたければdtoを変えればいいだけ
  - コメント等は複数apiが存在するが、これをもっと別のapiであることを明確に示すべき・・・？
+自然数というバリデーションを忘れずに
+モジュールにおいてのファイル名は{クラス名スネークケース}_mo で統一するのがいいかもしれない
 
 
-## reactファイル&ディレクトリ構成
+## ページ推移構成
+
+ - /login
+ - /signup
+ - /mypage
+   - /mypage/profile
+   - /mypage/password
+   - /mypage/image
+   - /mypage/followings
+     - ?page=1
+   - /mypage/followers
+     - ?page=1
+   - /mypage/posts
+     - ?page=1
+ - /users/{handle}
+   - /users/{handle}/profile
+   - /users/{handle}/followings
+   - /users/{handle}/followers
+   - /users/{handle}/posts
+     - ?page=1
+ - /posts
+   - /posts/{post_cuid}
+     - /posts/{post_cuid}/likes
+       - ?page=1
+     - /posts/{post_cuid}/comments
+       - ?page=1
+ - /comments/{comment_cuid}
+   - /comments/{comment_cuid}/likes
+     - ?page=1
+
+## react設計メモ
+
+ - ログインしているアカウント情報を保持する
+   - ログインしているアカウント情報を保持するためのatomを作成する
+   - 利用するライブラリはjotai
+   - 保持する内容はTinyUserDtoの内容と同じ
+     - cuid
+     - handle
+     - user_name
+   - 
+ - orvalで@tanstack/react-queryの型を生成する
+
+ヘッダとフッダを用意してNested Routingということになるのかな？
+ - ヘッダとフッダはどのページでも表示されるので、それらを囲むようにページを作成する
+利用するUIライブラリはradix UIがいい？radix-ui/react-*シリーズでなんとかしたい
