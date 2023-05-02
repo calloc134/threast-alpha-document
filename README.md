@@ -378,13 +378,13 @@ onDeleteがCascadeであるなら明記
        - updated_at
        - user -> TinyUserResDto
        - posts -> TinyPostResDto
-
- - wrapper
-   - paginated.ts -> PaginatedResDto<T>
-     - total
-     - per_page
-     - current_page
-     - data<T>[]
+   - wrapper
+     - paginated.ts -> PaginatedResDto
+       - per_page
+       - current_page
+       - data(unknown)
+     - PaginatedResDtoTinyUser
+     - PaginatedresDtoTinyPost
 
 
 これ、対象をディレクトリとして分けるべきでは？？RESTの思想的に
@@ -413,6 +413,7 @@ Prismaについてはstringのunionなので心配ご無用
 まあ普通にオフセットパターンになりそうだなぁ…な気がする。それならPrismaの機能がそのまま使えそうな気がしている
 命名の順番を本当にどうするべき？？すべて逆順にしてディレクトリ階層をそのまま適用するか？？うーん…でも・・・
 ちょっと待った、ファイル名とクラス名は一致させるべきでは？
+wrapperをresディレクトリ以下に移動
 
 ## APIを定義
  - auth
@@ -490,7 +491,7 @@ Prismaについてはstringのunionなので心配ご無用
    - @{handle}/followings
      - GET
        - res
-         - TynyUserResDto[]
+         - TinyUserResDto[]
    - @{handle}/followers
      - GET
        - res
@@ -551,6 +552,7 @@ Prismaについてはstringのunionなので心配ご無用
 1:1で紐づくもの(ex.いいね)はposts以下にネストしてしまうことができるが
 1:Nで紐づくもの(ex.コメント)はネストできないため、updateとdeleteについては別のapiに切り出す必要がありそう
 (すべてのコメントをpostにこだわらず取得する需要はないと判断)
+deleteした後は空オブジェクトを返す？
 
 ## ロジック注意事項
 ↑充実させる
@@ -578,11 +580,11 @@ Prismaについてはstringのunionなので心配ご無用
            - updateMe
            - deleteMe
            - updateMyPassword
-           - updateMyImage
+           - updateMyImage // これはどうするべき？？？
            - getMyFollowings
            - getMyFollowers
            - createMyFollowing
-           - getMyPosts
+           - getMyPosts // privateも表示する
      - ProfileByHandle
        - nonauth
          - NonAuthProfileByHandle
@@ -600,6 +602,7 @@ Prismaについてはstringのunionなので心配ご無用
            - getPostByCuid
        - auth
          - AuthPosts
+           - createPost
            - updatePostByCuid
            - deletePostByCuid
      - PostLikes
@@ -669,6 +672,15 @@ Prismaについてはstringのunionなので心配ご無用
  - コメント等は複数apiが存在するが、これをもっと別のapiであることを明確に示すべき・・・？
 自然数というバリデーションを忘れずに
 モジュールにおいてのファイル名は{クラス名スネークケース}_mo で統一するのがいいかもしれない
+変数・引数の命名
+ - ユーザのセッションのcuid
+ - リクエストとして与えたパラメータ類
+ページネーションの変数名はwrapperと揃える
+ - current_page
+ - per_page
+
+なんか権限管理が死ぬほど怠くなってきている
+後でTODOとして…caslで何とか出来るところはする
 
 
 ## ページ推移構成
